@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>3LG Video Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black:#0A0A0A; --grey:#141414; --grey-mid:#1E1E1E; --grey-card:#181818;
+  --green:#00A550; --green-dim:rgba(0,165,80,0.12); --green-glow:rgba(0,165,80,0.35);
+  --red:#CC2200; --red-dim:rgba(204,34,0,0.12);
+  --white:#F2F2F2; --dim:#666; --border:rgba(255,255,255,0.06); --border-green:rgba(0,165,80,0.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--black)!important;color:var(--white)!important;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+.header{background:var(--black);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--white);display:flex;align-items:center;gap:8px;}
+.live-dot{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green-glow);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 6px var(--green-glow);}50%{box-shadow:0 0 14px var(--green-glow);}}
+.cost-pill{font-family:'DM Mono',monospace;font-size:10px;color:var(--green);background:var(--green-dim);border:1px solid var(--border-green);padding:4px 8px;border-radius:3px;}
+
+.tabs{display:flex;background:var(--grey);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:0 0 auto;padding:11px 18px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+
+.panel{display:none;padding:16px;}
+.panel.active{display:block;}
+
+.section-label{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+.script-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.script-tag{font-size:11px;font-weight:600;padding:6px 12px;border-radius:3px;border:1px solid var(--border);color:var(--dim);cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;}
+.script-tag.active{background:var(--green-dim);border-color:var(--border-green);color:var(--green);}
+
+.script-box{background:var(--grey-card);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:16px;position:relative;}
+.script-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--green);margin-bottom:12px;text-transform:uppercase;}
+.script-content{font-size:13px;line-height:1.85;color:var(--white);}
+.timestamp{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);display:block;margin:10px 0 4px;}
+.line{display:block;padding:2px 0;}
+.line.bold{font-weight:700;font-size:14px;}
+.line.direction{color:var(--dim);font-style:italic;font-size:12px;}
+.copy-btn{position:absolute;top:12px;right:12px;background:var(--grey-mid);border:1px solid var(--border);color:var(--dim);font-size:10px;font-family:'DM Mono',monospace;padding:4px 8px;border-radius:3px;cursor:pointer;transition:all 0.2s;}
+.copy-btn:active{background:var(--green-dim);color:var(--green);}
+
+.pipeline{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.step{background:var(--grey-card);border:1px solid var(--border);border-radius:6px;overflow:hidden;transition:border-color 0.2s;}
+.step.done{border-color:var(--border-green);}
+.step-header{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;}
+.step-num{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--dim);width:24px;flex-shrink:0;line-height:1;}
+.step.done .step-num{color:var(--green);}
+.step-info{flex:1;}
+.step-name{font-size:13px;font-weight:600;color:var(--white);}
+.step-sub{font-size:11px;color:var(--dim);margin-top:2px;}
+.step-check{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;transition:all 0.2s;cursor:pointer;}
+.step.done .step-check{background:var(--green);border-color:var(--green);color:var(--black);}
+.step-body{padding:0 14px 14px;display:none;}
+.step.open .step-body{display:block;}
+.tool-btn{display:flex;align-items:center;justify-content:space-between;background:var(--grey-mid);border:1px solid var(--border);border-radius:5px;padding:12px 14px;margin-bottom:8px;text-decoration:none;color:var(--white);font-size:13px;font-weight:500;transition:all 0.2s;}
+.tool-btn:active{background:var(--green-dim);border-color:var(--border-green);}
+.tool-arrow{color:var(--green);font-size:18px;line-height:1;}
+.tool-cost{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:4px;}
+.step-note{font-size:11px;color:var(--dim);line-height:1.65;margin-top:6px;padding:9px 10px;background:var(--grey);border-radius:4px;border-left:2px solid var(--green);}
+
+.stack-total{background:var(--green-dim);border:1px solid var(--border-green);border-radius:6px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.stack-total-label{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:var(--green);}
+.stack-total-num{font-family:'DM Mono',monospace;font-size:22px;color:var(--green);}
+
+.stack-grid{display:flex;flex-direction:column;gap:8px;}
+.stack-card{background:var(--grey-card);border:1px solid var(--border);border-radius:6px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.stack-card.flag{border-color:rgba(255,153,0,0.3);}
+.stack-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0;}
+.stack-info{flex:1;min-width:0;}
+.stack-name{font-size:13px;font-weight:600;color:var(--white);}
+.stack-role{font-size:10px;color:var(--dim);margin-top:2px;line-height:1.4;}
+.stack-right{text-align:right;flex-shrink:0;}
+.stack-cost{font-family:'DM Mono',monospace;font-size:12px;color:var(--green);}
+.stack-status{font-size:9px;margin-top:3px;letter-spacing:0.5px;}
+.s-active{color:var(--green);}
+.s-free{color:#5599ff;}
+.s-flag{color:#ff9900;}
+.s-desktop{color:var(--dim);}
+
+.alert{background:rgba(255,153,0,0.08);border:1px solid rgba(255,153,0,0.25);border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:11px;color:#ff9900;line-height:1.55;}
+.alert strong{display:block;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;margin-bottom:4px;}
+
+.format-grid{display:flex;flex-direction:column;gap:8px;}
+.format-card{background:var(--grey-card);border:1px solid var(--border);border-radius:6px;padding:13px 14px;}
+.format-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;gap:8px;}
+.format-name{font-size:13px;font-weight:600;color:var(--white);}
+.format-badge{font-size:9px;font-family:'DM Mono',monospace;padding:3px 7px;border-radius:3px;letter-spacing:0.5px;white-space:nowrap;flex-shrink:0;}
+.badge-phone{background:var(--green-dim);color:var(--green);border:1px solid var(--border-green);}
+.badge-desktop{background:var(--grey-mid);color:var(--dim);border:1px solid var(--border);}
+.format-desc{font-size:11px;color:var(--dim);line-height:1.55;}
+.format-tools{font-family:'DM Mono',monospace;font-size:10px;color:var(--dim);margin-top:7px;padding-top:7px;border-top:1px solid var(--border);}
+
+.reset-btn{width:100%;background:var(--red-dim);border:1px solid rgba(204,34,0,0.2);color:var(--red);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:11px;border-radius:5px;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><div class="live-dot"></div>3LG VIDEO COMMAND</div>
+  <div class="cost-pill">$101.99/mo</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('produce',this)">Produce</div>
+  <div class="tab" onclick="showTab('scripts',this)">Scripts</div>
+  <div class="tab" onclick="showTab('stack',this)">Stack</div>
+  <div class="tab" onclick="showTab('formats',this)">Formats</div>
+</div>
+
+<!-- PRODUCE -->
+<div class="panel active" id="tab-produce">
+  <div class="section-label">Active Script</div>
+  <div class="script-selector">
+    <div class="script-tag active" onclick="selectScript('evergreen',this)">Evergreen</div>
+    <div class="script-tag" onclick="selectScript('homeservices',this)">Home Services</div>
+    <div class="script-tag" onclick="selectScript('realestate',this)">Real Estate</div>
+    <div class="script-tag" onclick="selectScript('blackowned',this)">Black-Owned</div>
+    <div class="script-tag" onclick="selectScript('ecommerce',this)">E-Commerce</div>
+    <div class="script-tag" onclick="selectScript('foodwater',this)">Food & Water</div>
+  </div>
+
+  <div class="script-box">
+    <div class="script-label">Script — Read While You Work</div>
+    <button class="copy-btn" onclick="copyScript()">COPY</button>
+    <div class="script-content" id="script-display"></div>
+  </div>
+
+  <div class="section-label">Production Pipeline — Text to Video</div>
+  <div class="pipeline">
+
+    <div class="step" id="s1">
+      <div class="step-header" onclick="toggleStep('s1')">
+        <div class="step-num">01</div>
+        <div class="step-info">
+          <div class="step-name">Voice Generation</div>
+          <div class="step-sub">Paste script → Coach Nick clone → download audio</div>
+        </div>
+        <div class="step-check" onclick="markDone(event,'s1')">✓</div>
+      </div>
+      <div class="step-body">
+        <a class="tool-btn" href="https://elevenlabs.io" target="_blank">
+          <span>Open ElevenLabs</span><span class="tool-arrow">↗</span>
+        </a>
+        <div class="step-note">Paste your script text → select Coach Nick voice clone → Generate → Download MP3. This audio feeds directly into HeyGen for lip-sync.</div>
+        <div class="tool-cost">$22/mo · Creator · 100k credits/mo · Professional voice cloning included</div>
+      </div>
+    </div>
+
+    <div class="step" id="s2">
+      <div class="step-header" onclick="toggleStep('s2')">
+        <div class="step-num">02</div>
+        <div class="step-info">
+          <div class="step-name">Avatar Video</div>
+          <div class="step-sub">Upload audio → avatar lip-syncs → renders MP4</div>
+        </div>
+        <div class="step-check" onclick="markDone(event,'s2')">✓</div>
+      </div>
+      <div class="step-body">
+        <a class="tool-btn" href="https://app.heygen.com" target="_blank">
+          <span>Open HeyGen</span><span class="tool-arrow">↗</span>
+        </a>
+        <div class="step-note">Upload MP3 from Step 1 → select your avatar → HeyGen lip-syncs and renders full video. Download MP4. Client gets full credit — looks like they made it.</div>
+        <div class="tool-cost">$0 · Included in stack</div>
+      </div>
+    </div>
+
+    <div class="step" id="s3">
+      <div class="step-header" onclick="toggleStep('s3')">
+        <div class="step-num">03</div>
+        <div class="step-info">
+          <div class="step-name">Scene Generation</div>
+          <div class="step-sub">B-roll + style transfer → Runway</div>
+        </div>
+        <div class="step-check" onclick="markDone(event,'s3')">✓</div>
+      </div>
+      <div class="step-body">
+        <a class="tool-btn" href="https://app.runwayml.com" target="_blank">
+          <span>Open Runway</span><span class="tool-arrow">↗</span>
+        </a>
+        <div class="step-note">Text prompt → generate b-roll scenes to layer with your avatar video. Style transfer applies visual aesthetic. Basic generation works mobile — heavy edits best on desktop.</div>
+        <div class="tool-cost">$28/mo · Pro · 2,250 credits/mo</div>
+      </div>
+    </div>
+
+    <div class="step" id="s4">
+      <div class="step-header" onclick="toggleStep('s4')">
+        <div class="step-num">04</div>
+        <div class="step-info">
+          <div class="step-name">Edit + Format</div>
+          <div class="step-sub">Clip → captions → platform formats</div>
+        </div>
+        <div class="step-check" onclick="markDone(event,'s4')">✓</div>
+      </div>
+      <div class="step-body">
+        <a class="tool-btn" href="https://vizard.ai" target="_blank">
+          <span>Open Vizard</span><span class="tool-arrow">↗</span>
+        </a>
+        <a class="tool-btn" href="https://nemovideo.com" target="_blank">
+          <span>Open NemoVideo</span><span class="tool-arrow">↗</span>
+        </a>
+        <div class="step-note">Drop HeyGen MP4 into Vizard — auto-clips and captions for TikTok, Instagram, Facebook. NemoVideo: describe your edit in plain language, it builds it. Both fully mobile.</div>
+        <div class="tool-cost">Vizard $39/mo · NemoVideo $12.99/mo</div>
+      </div>
+    </div>
+
+    <div class="step" id="s5">
+      <div class="step-header" onclick="toggleStep('s5')">
+        <div class="step-num">05</div>
+        <div class="step-info">
+          <div class="step-name">Distribute</div>
+          <div class="step-sub">Schedule → Facebook, Instagram, TikTok</div>
+        </div>
+        <div class="step-check" onclick="markDone(event,'s5')">✓</div>
+      </div>
+      <div class="step-body">
+        <a class="tool-btn" href="https://ayrshare.com" target="_blank">
+          <span>Open Ayrshare</span><span class="tool-arrow">↗</span>
+        </a>
+        <div class="step-note">Push formatted clips to all platforms on schedule. TikTok routed through Ayrshare while 3LG TikTok API audit runs parallel. No account posts the same format twice in a row.</div>
+        <div class="tool-cost">Included in stack · All tiers</div>
+      </div>
+    </div>
+
+  </div>
+  <button class="reset-btn" onclick="resetPipeline()">Reset Pipeline</button>
+</div>
+
+<!-- SCRIPTS -->
+<div class="panel" id="tab-scripts">
+  <div class="section-label">Script Library</div>
+
+  <div class="script-box">
+    <div class="script-label">Evergreen — Overview Ad · 45 sec</div>
+    <div class="script-content">
+      <span class="timestamp">[0:00–0:08]</span>
+      <span class="line">"Most business owners think they need a website.</span>
+      <span class="line">And they're right.</span>
+      <span class="line bold">But see — what they actually need… is a system."</span>
+      <span class="timestamp">[0:08–0:22]</span>
+      <span class="line">"Most people pay $500 for a basic website.</span>
+      <span class="line">And that website just… sits there.</span>
+      <span class="line">It doesn't talk. It doesn't follow up. It doesn't close anything."</span>
+      <span class="line">"For that same investment — 3 Levels of Game gives you 14 active systems.</span>
+      <span class="line">Advanced communication systems — phone, text, and email.</span>
+      <span class="line">Lead generation. Social media. Reputation management.</span>
+      <span class="line bold">All of it. Day one."</span>
+      <span class="timestamp">[0:22–0:40]</span>
+      <span class="line direction">[Voice over — AI Front Desk responding live on screen]</span>
+      <span class="line">"And when you walk into your day, you don't dig through spreadsheets.</span>
+      <span class="line">You don't call somebody.</span>
+      <span class="line bold">You just… ask."</span>
+      <span class="line">"How many leads did we get this week?"</span>
+      <span class="line">"What's our projected revenue this month — prove it."</span>
+      <span class="line">"Show me every video we posted and what it converted."</span>
+      <span class="line bold">"And your business answers you. In real time."</span>
+      <span class="timestamp">[0:40–0:50]</span>
+      <span class="line">"See, a website is a brochure.</span>
+      <span class="line">What we built… is a business that runs while you sleep, responds while you're busy, and reports while you lead."</span>
+      <span class="line">"That's not a tool.</span>
+      <span class="line bold">That's infrastructure."</span>
+      <span class="line bold" style="color:var(--green);margin-top:10px;font-size:15px;">3 Levels of Game.</span>
+    </div>
+  </div>
+
+  <div class="script-box" style="opacity:0.45;border-style:dashed;">
+    <div class="script-label">Home Services — Next This Session</div>
+    <div class="script-content" style="color:var(--dim);font-size:12px;">Prototype: Johnson HVAC and Plumbing · Niche-specific cut · Building next</div>
+  </div>
+  <div class="script-box" style="opacity:0.45;border-style:dashed;">
+    <div class="script-label">Real Estate — Pending</div>
+    <div class="script-content" style="color:var(--dim);font-size:12px;">Prototype: Elevated Properties Group</div>
+  </div>
+  <div class="script-box" style="opacity:0.45;border-style:dashed;">
+    <div class="script-label">Black-Owned Businesses — Pending</div>
+    <div class="script-content" style="color:var(--dim);font-size:12px;">Named explicitly. Never softened. Never generalized.</div>
+  </div>
+  <div class="script-box" style="opacity:0.45;border-style:dashed;">
+    <div class="script-label">E-Commerce — Pending</div>
+    <div class="script-content" style="color:var(--dim);font-size:12px;">Niche-specific cut coming</div>
+  </div>
+  <div class="script-box" style="opacity:0.45;border-style:dashed;">
+    <div class="script-label">Food & Water — Pending</div>
+    <div class="script-content" style="color:var(--dim);font-size:12px;">Prototype: Soulful Kitchen</div>
+  </div>
+</div>
+
+<!-- STACK -->
+<div class="panel" id="tab-stack">
+  <div class="alert">
+    <strong>⚠ VERIFY BILLING</strong>
+    Vizard current listings show $19.50/mo. Your records show $39/mo. Check your next billing statement — you may be on an older rate or different tier.
+  </div>
+  <div class="stack-total">
+    <div class="stack-total-label">Monthly Stack Cost</div>
+    <div class="stack-total-num">$101.99</div>
+  </div>
+  <div class="section-label">Video Command Center — Bills 7th/mo</div>
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="stack-icon">🎙</div>
+      <div class="stack-info">
+        <div class="stack-name">ElevenLabs Creator</div>
+        <div class="stack-role">Coach Nick voice clone · 100k credits · Pro cloning</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$22/mo</div>
+        <div class="stack-status s-active">● ACTIVE</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🎬</div>
+      <div class="stack-info">
+        <div class="stack-name">Runway Pro</div>
+        <div class="stack-role">Scene generation · Style transfer · 2,250 credits</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$28/mo</div>
+        <div class="stack-status s-active">● ACTIVE</div>
+      </div>
+    </div>
+    <div class="stack-card flag">
+      <div class="stack-icon">✂️</div>
+      <div class="stack-info">
+        <div class="stack-name">Vizard Business</div>
+        <div class="stack-role">Distribution · Short-form clipping · Social publish</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$39/mo</div>
+        <div class="stack-status s-flag">⚠ VERIFY</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🎥</div>
+      <div class="stack-info">
+        <div class="stack-name">NemoVideo</div>
+        <div class="stack-role">Personal production · Conversational editing · Mobile</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$12.99/mo</div>
+        <div class="stack-status s-active">● ACTIVE</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">👤</div>
+      <div class="stack-info">
+        <div class="stack-name">HeyGen + API</div>
+        <div class="stack-role">Avatar · Lip-sync · Text-to-video pipeline</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$0</div>
+        <div class="stack-status s-free">● INCLUDED</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">⚙️</div>
+      <div class="stack-info">
+        <div class="stack-name">Shotstack</div>
+        <div class="stack-role">Programmatic assembly · Upgrades at first client → $39</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$0</div>
+        <div class="stack-status s-free">● FREE TIER</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🎞</div>
+      <div class="stack-info">
+        <div class="stack-name">DaVinci Resolve</div>
+        <div class="stack-role">Elite $1k only · Human editor · Cinematic upsell</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$0</div>
+        <div class="stack-status s-desktop">◆ DESKTOP</div>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="stack-icon">🖌</div>
+      <div class="stack-info">
+        <div class="stack-name">EbSynth</div>
+        <div class="stack-role">Style propagation · Dick Tracy / animated aesthetic</div>
+      </div>
+      <div class="stack-right">
+        <div class="stack-cost">$0</div>
+        <div class="stack-status s-desktop">◆ DESKTOP</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORMATS -->
+<div class="panel" id="tab-formats">
+  <div class="section-label">10 Automated Video Formats</div>
+  <div class="format-grid">
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Text-to-Avatar Ad</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">Script → ElevenLabs → HeyGen avatar. Zero camera. Zero studio. Complete video produced entirely from your phone. This is the primary pipeline.</div>
+      <div class="format-tools">ElevenLabs → HeyGen → Vizard → Ayrshare</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Talking Head Clip</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">Record yourself on phone camera. Drop into NemoVideo or Vizard. Auto-caption, auto-format, publish. Fastest turnaround in the stack.</div>
+      <div class="format-tools">Phone Camera → NemoVideo → Vizard → Ayrshare</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Dashboard Demo</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">Screen record 3LG Front Desk AI answering live questions. Voice over from ElevenLabs. Most powerful proof-of-concept format — shows the system working in real time.</div>
+      <div class="format-tools">Screen Record → ElevenLabs → NemoVideo</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Contrarian Hook</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">"Top 10 Misconceptions About [X]" — avatar delivery, auto-formatted per platform, rotates weekly. Stops the scroll immediately.</div>
+      <div class="format-tools">ElevenLabs → HeyGen → Vizard</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Curiosity Hook</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">"Top 10 Things People Are Curious About [X]" — same pipeline, different angle. Drives comments and saves.</div>
+      <div class="format-tools">ElevenLabs → HeyGen → Vizard</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Controversy + Arguments</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">"Top 10 Things People Argue About When It Comes To [X]" — highest engagement format in the rotation. Algorithm bait done right.</div>
+      <div class="format-tools">ElevenLabs → HeyGen → Vizard</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Trend Breakdown</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">"Top 10 Trends When It Comes To [X]" — positions every client as the authority in their vertical. Auto-rotates weekly.</div>
+      <div class="format-tools">ElevenLabs → HeyGen → Vizard</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Interview Series</div><div class="format-badge badge-phone">📱 PHONE</div></div>
+      <div class="format-desc">Game Time $750+ and up. Record interview on phone. Vizard auto-clips highlights into multiple short-form posts for every platform.</div>
+      <div class="format-tools">Phone Camera → Vizard → Ayrshare</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Cinematic Brand Film</div><div class="format-badge badge-desktop">🖥 DESKTOP</div></div>
+      <div class="format-desc">Elite $1k plan only. Runway scene generation + DaVinci Resolve human editor + EbSynth style propagation. Dick Tracy / animated aesthetic. Full cinematic upsell.</div>
+      <div class="format-tools">Runway → DaVinci Resolve → EbSynth</div>
+    </div>
+    <div class="format-card">
+      <div class="format-top"><div class="format-name">Programmatic Campaign</div><div class="format-badge badge-desktop">🖥 DESKTOP</div></div>
+      <div class="format-desc">Shotstack API assembles bulk video variants at scale. Activates at first paying client. Upgrades from free tier automatically. Zero manual assembly.</div>
+      <div class="format-tools">Shotstack API → Ayrshare</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const scripts = {
+  evergreen:`<span class="timestamp">[0:00–0:08]</span><span class="line">"Most business owners think they need a website.</span><span class="line">And they're right.</span><span class="line bold">But see — what they actually need… is a system."</span><span class="timestamp">[0:08–0:22]</span><span class="line">"Most people pay $500 for a basic website.</span><span class="line">And that website just… sits there.</span><span class="line">It doesn't talk. It doesn't follow up. It doesn't close anything."</span><span class="line">"For that same investment — 3 Levels of Game gives you 14 active systems.</span><span class="line">Advanced communication systems — phone, text, and email.</span><span class="line">Lead generation. Social media. Reputation management.</span><span class="line bold">All of it. Day one."</span><span class="timestamp">[0:22–0:40]</span><span class="line direction">[Voice over — AI Front Desk responding live on screen]</span><span class="line">"And when you walk into your day, you don't dig through spreadsheets.</span><span class="line">You don't call somebody.</span><span class="line bold">You just… ask."</span><span class="line">"How many leads did we get this week?"</span><span class="line">"What's our projected revenue this month — prove it."</span><span class="line">"Show me every video we posted and what it converted."</span><span class="line bold">"And your business answers you. In real time."</span><span class="timestamp">[0:40–0:50]</span><span class="line">"See, a website is a brochure.</span><span class="line">What we built… is a business that runs while you sleep, responds while you're busy, and reports while you lead."</span><span class="line">"That's not a tool.</span><span class="line bold">That's infrastructure."</span><span class="line bold" style="color:var(--green);margin-top:10px;font-size:15px;">3 Levels of Game.</span>`,
+  homeservices:`<span class="line direction">Home Services script — building next this session.</span><span class="line" style="color:var(--dim);margin-top:8px;">Prototype: Johnson HVAC and Plumbing</span>`,
+  realestate:`<span class="line direction">Real Estate script — pending.</span><span class="line" style="color:var(--dim);margin-top:8px;">Prototype: Elevated Properties Group</span>`,
+  blackowned:`<span class="line direction">Black-Owned Businesses script — pending.</span><span class="line" style="color:var(--dim);margin-top:8px;">Named explicitly. Never softened. Never generalized.</span>`,
+  ecommerce:`<span class="line direction">E-Commerce script — pending.</span><span class="line" style="color:var(--dim);margin-top:8px;">Niche-specific cut coming.</span>`,
+  foodwater:`<span class="line direction">Food & Water script — pending.</span><span class="line" style="color:var(--dim);margin-top:8px;">Prototype: Soulful Kitchen</span>`
+};
+
+let currentScript='evergreen';
+
+function selectScript(key,el){
+  currentScript=key;
+  document.querySelectorAll('.script-tag').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('script-display').innerHTML=scripts[key];
+}
+
+function copyScript(){
+  const text=document.getElementById('script-display').innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector('.copy-btn');
+    btn.textContent='COPIED';
+    setTimeout(()=>btn.textContent='COPY',1500);
+  });
+}
+
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+function toggleStep(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function markDone(e,id){
+  e.stopPropagation();
+  document.getElementById(id).classList.toggle('done');
+}
+
+function resetPipeline(){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('done','open'));
+}
+
+document.getElementById('script-display').innerHTML=scripts.evergreen;
+</script>
+</body>
+</html>
